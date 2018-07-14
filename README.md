@@ -1,8 +1,9 @@
-# front [![Build Status](https://travis-ci.org/gernest/front.svg)](https://travis-ci.org/gernest/front) [![GoDoc](https://godoc.org/github.com/gernest/front?status.svg)](https://godoc.org/github.com/gernest/front)[![Coverage Status](https://coveralls.io/repos/gernest/front/badge.svg?branch=master&service=github)](https://coveralls.io/github/gernest/front?branch=master)
+# front 
 
-extracts frontmatter from text files with ease.
+Extracts frontmatter from text files with ease.
 
 ## Features
+
 * Custom delimiters. You are free to register any delimiter of your choice. Provided its a three character string. e.g `+++`,  `$$$`,  `---`,  `%%%`
 * Custom Handlers. Anything that implements `HandlerFunc` can be used to decode the values from the frontmatter text, you can see the `JSONHandler` for how to implement one.
 * Support YAML frontmatter
@@ -10,7 +11,9 @@ extracts frontmatter from text files with ease.
 
 ## Installation
 
-	go get github.com/gernest/front
+```sh
+go get github.com/cirocosta/front
+```
 
 ## How to use
 
@@ -21,7 +24,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gernest/front"
+	"github.com/cirocosta/front"
 )
 
 var txt = `+++
@@ -34,10 +37,16 @@ var txt = `+++
 Over my dead body
 `
 
+type MyStruct struct {
+        Title `json:"title"`
+}
+
 func main() {
+        var f = &MyStruct{}
+
 	m := front.NewMatter()
 	m.Handle("+++", front.JSONHandler)
-	f, body, err := m.Parse(strings.NewReader(txt))
+	body, err := m.Parse(strings.NewReader(txt), f)
 	if err != nil {
 		panic(err)
 	}
