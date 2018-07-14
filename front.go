@@ -23,7 +23,7 @@ var (
 
 type (
 	//HandlerFunc is an interface for a function that process front matter text.
-	HandlerFunc func(string) (map[string]interface{}, error)
+	HandlerFunc func(string, interface{}) error
 )
 
 //Matter is all what matters here.
@@ -42,23 +42,28 @@ func (m *Matter) Handle(delim string, fn HandlerFunc) {
 }
 
 // Parse parses the input and extract the frontmatter
-func (m *Matter) Parse(input io.Reader) (front map[string]interface{}, body string, err error) {
-	return m.parse(input)
+func (m *Matter) Parse(input io.Reader, v interface{}) (body string, err error) {
+	return m.parse(input, v)
 }
-func (m *Matter) parse(input io.Reader) (front map[string]interface{}, body string, err error) {
-	var getFront = func(f string) string {
-		return strings.TrimSpace(f[3:])
+
+func (m *Matter) parse(input io.Reader, v interface{}) (body string, err error) {
+	var getFront = func(f string) (res string) {
+		res = strings.TrimSpace(f[3:])
+		return
 	}
 	f, body, err := m.splitFront(input)
 	if err != nil {
-		return nil, "", err
+		return
 	}
+
 	h := m.handlers[f[:3]]
-	front, err = h(getFront(f))
+
+	err = h(getFront(f), v)
 	if err != nil {
-		return nil, "", err
+		return
 	}
-	return front, body, nil
+
+	return
 
 }
 func sniffDelim(input []byte) (string, error) {
@@ -122,23 +127,26 @@ func dropSpace(d []byte) []byte {
 	return bytes.TrimSpace(d)
 }
 
-//JSONHandler implements HandlerFunc interface. It extracts front matter data from the given
-// string argument by interpreting it as a json string.
-func JSONHandler(front string) (map[string]interface{}, error) {
-	var rst interface{}
-	err := json.Unmarshal([]byte(front), &rst)
+// JSONHandler implements HandlerFunc interface.
+//
+// It extracts front matter data from the given string argument by interpreting it as a json string.
+func JSONHandler(front string, v interface{}) (err error) {
+	err = json.Unmarshal([]byte(front), v)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return rst.(map[string]interface{}), nil
+
+	return
 }
 
-//YAMLHandler decodes ymal string into a go map[string]interface{}
-func YAMLHandler(front string) (map[string]interface{}, error) {
-	out := make(map[string]interface{})
-	err := yaml.Unmarshal([]byte(front), out)
+// YAMLHandler implements HandlerFunc interface.
+//
+// It extracts front matter data from the given string argument by interpreting it as a yaml string.
+func YAMLHandler(front string, v interface{}) (err error) {
+	err = yaml.Unmarshal([]byte(front), v)
 	if err != nil {
-		return nil, err
+		return
 	}
-	return out, nil
+
+	return
 }

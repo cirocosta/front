@@ -1,44 +1,68 @@
 package front
 
 import (
-	"bytes"
-	"io/ioutil"
+	"os"
 	"testing"
 )
 
-func TestMatter(t *testing.T) {
-	bodyData, err := ioutil.ReadFile("testdata/front/body.md")
-	if err != nil {
-		t.Error(err)
-	}
+type frontMatter struct {
+	Title string `json:"title" yaml:"title"`
+}
+
+var expectedBody = `# Body
+Over my dead body`
+
+func TestMatterJson(t *testing.T) {
 	m := NewMatter()
 	m.Handle("+++", JSONHandler)
-	b, err := ioutil.ReadFile("testdata/front/json.md")
+
+	file, err := os.Open("testdata/front/json.md")
 	if err != nil {
 		t.Error(err)
 	}
-	front, body, err := m.Parse(bytes.NewReader(b))
+	defer file.Close()
+
+	front := &frontMatter{}
+
+	body, err := m.Parse(file, front)
 	if err != nil {
 		t.Error(err)
 	}
-	if body != string(bodyData) {
-		t.Errorf("expected %s got %s", string(bodyData), body)
+
+	if body != expectedBody {
+		t.Errorf("expected '%s' got '%s'", expectedBody, body)
 	}
-	if _, ok := front["title"]; !ok {
-		t.Error("expected front matter to contain title got nil instead")
+
+	if front.Title != "bongo" {
+		t.Error("expected front matter to contain title")
 	}
 }
 
-func TestYAMLHandler(t *testing.T) {
-	data, err := ioutil.ReadFile("testdata/sample.yml")
+
+func TestMatterYaml(t *testing.T) {
+	m := NewMatter()
+	m.Handle("---", YAMLHandler)
+
+	file, err := os.Open("testdata/front/yaml.md")
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
 	}
-	f, err := YAMLHandler(string(data))
+	defer file.Close()
+
+	front := &frontMatter{}
+
+	body, err := m.Parse(file, front)
 	if err != nil {
-		t.Errorf("handling yaml %v", err)
+		t.Errorf("failed to parse - %+v", err)
 	}
-	if _, ok := f["language"]; !ok {
-		t.Errorf("expected language got nil instead")
+
+	if body != expectedBody {
+		t.Errorf("expected '%s' got '%s'", expectedBody, body)
+	}
+
+	if front.Title != "bongo" {
+		t.Error("expected front matter to contain title")
 	}
 }
+
+
